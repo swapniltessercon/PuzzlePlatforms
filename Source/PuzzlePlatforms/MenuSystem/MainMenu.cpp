@@ -77,10 +77,7 @@ void UMainMenu::QuitPressed()
 {
 	UWorld* World = GetWorld();
 	if (!ensure(World != nullptr)) return;
-
 	APlayerController* PlayerController = World->GetFirstPlayerController();
 	if (!ensure(PlayerController != nullptr)) return;
-
 	PlayerController->ConsoleCommand("quit");
-
 }
