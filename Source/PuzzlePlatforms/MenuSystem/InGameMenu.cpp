@@ -21,7 +21,6 @@ bool UInGameMenu::Initialize() {
 
 void UInGameMenu::CancelPressed()
 {
-	
 	Teardown();
 }
 

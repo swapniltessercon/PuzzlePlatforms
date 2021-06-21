@@ -34,17 +34,22 @@ public:
 
 	virtual void LoadMainMenu() override;
 
+	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 	
 
 private:
    TSubclassOf<class UUserWidget> MenuClass;
    TSubclassOf<class UUserWidget> InGameMenuClass;
    class UMainMenu* Menu;
+
+   //TSharedPtr<class FOnlineSessionSearch> SessionSearch;
    
    //IOnlineSessionPtr SessionInterface;
    void OnCreateSessionComplete(FName SessionName, bool Success);
 
    void OnDestroySessionComplete(FName SessionName, bool Success);
+
+   void OnFindSessionsComplete(bool Success);
 
    void CreateSession();
 };

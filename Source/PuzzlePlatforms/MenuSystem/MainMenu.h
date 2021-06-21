@@ -17,7 +17,12 @@ class PUZZLEPLATFORMS_API UMainMenu : public UMenuWidget
 	GENERATED_BODY()
 
 
-	
+public:
+	UMainMenu(const FObjectInitializer& ObjectInitializer);
+
+private:
+	TSubclassOf<class UUserWidget> ServerRowClass;
+
 
 protected:
 	virtual bool Initialize();
@@ -49,7 +54,8 @@ private:
 		class UWidget* JoinMenu;
 
 	UPROPERTY(meta = (BindWidget))
-		class UEditableTextBox* IPAddressField;
+		//class UEditableTextBox* IPAddressField;
+		class UPanelWidget* ServerList;
 
 	UFUNCTION()
 		 void HostServer();

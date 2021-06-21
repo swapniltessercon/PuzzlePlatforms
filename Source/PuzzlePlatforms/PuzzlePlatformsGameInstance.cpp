@@ -44,7 +44,7 @@ void UPuzzlePlatformsGameInstance::Init()
 {
 
 	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-
+	//TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 	if (Subsystem != nullptr) {
 
 		UE_LOG(LogTemp, Warning, TEXT("Found Subsystem %s"), *Subsystem->GetSubsystemName().ToString());
@@ -55,6 +55,14 @@ void UPuzzlePlatformsGameInstance::Init()
 			
 			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnCreateSessionComplete);
 			SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnCreateSessionComplete);
+			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnFindSessionsComplete);
+
+			SessionSearch = MakeShareable(new FOnlineSessionSearch());
+			if (SessionSearch.IsValid())
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Starting Find Session"));
+				SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+			}
 		}
 	}
 	else
@@ -66,6 +74,27 @@ void UPuzzlePlatformsGameInstance::Init()
 
 	UE_LOG(LogTemp, Warning, TEXT("Found class %s"), *MenuClass->GetName());
 }
+
+void UPuzzlePlatformsGameInstance::OnFindSessionsComplete(bool Success)
+{
+	//UE_LOG(LogTemp, Warning, TEXT("Finished Find Session"));
+	//SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	//TSharedPtr<class FOnlineSessionSearch> SessionSearch;
+
+
+	//SessionSearch = MakeShareable(new FOnlineSessionSearch());
+
+	if (Success && SessionSearch.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Finished Find Session"));
+
+		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Found session names: %s"), *SearchResult.GetSessionIdStr());
+		}
+	}
+}
+
 
 
 void UPuzzlePlatformsGameInstance::LoadMenu()
@@ -122,6 +151,9 @@ void UPuzzlePlatformsGameInstance::CreateSession()
 		
 		FOnlineSessionSettings SessionSettings;
 		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
+		SessionSettings.bIsLANMatch = true;
+		SessionSettings.NumPublicConnections = 2;
+		SessionSettings.bShouldAdvertise = true;
 	}
 }
 
