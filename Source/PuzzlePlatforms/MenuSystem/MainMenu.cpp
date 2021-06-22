@@ -7,6 +7,7 @@
 #include "Components/WidgetSwitcher.h"
 #include "Components/EditableTextBox.h"
 #include "ServerRow.h"
+#include "Components/TextBlock.h"
 
 
 
@@ -54,27 +55,61 @@ void UMainMenu::HostServer()
 	}
 }
 
-void UMainMenu::JoinServer()
+void UMainMenu::SetServerList(TArray<FString> ServerNames)
 {
+	UWorld* World = this->GetWorld();
+	if (!ensure(World != nullptr)) return;
 
-	UE_LOG(LogTemp, Warning, TEXT("I'm gonna Joinserver"));
-	if (MenuInterface != nullptr)
+	ServerList->ClearChildren();
+	uint32 i = 0;
+	for (const FString& ServerName : ServerNames)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("I'm gonna Joinserver"));
-		/*if (!ensure(IPAddressField != nullptr)) return;
-		const FString& Address = IPAddressField->GetText().ToString();
-		MenuInterface->Join(Address);*/
-
-
-
-		UWorld* World = this->GetWorld();
-		if (!ensure(World != nullptr)) return;
-
 		UServerRow* Row = CreateWidget<UServerRow>(World, ServerRowClass);
 		if (!ensure(Row != nullptr)) return;
 
+		Row->ServerName->SetText(FText::FromString(ServerName));
+		Row->Setup(this, i);
+		++i;
+
 		ServerList->AddChild(Row);
 	}
+}
+
+void UMainMenu::SelectIndex(uint32 Index)
+{
+	SelectedIndex = Index;
+}
+
+
+void UMainMenu::JoinServer()
+{
+
+	if (SelectedIndex.IsSet() && MenuInterface != nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Selected index %d."), SelectedIndex.GetValue());
+		MenuInterface->Join(SelectedIndex.GetValue());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Selected index not set."));
+	}
+
+	//if (MenuInterface != nullptr)
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("I'm gonna Joinserver"));
+	//	/*if (!ensure(IPAddressField != nullptr)) return;
+	//	const FString& Address = IPAddressField->GetText().ToString();
+	//	MenuInterface->Join(Address);*/
+
+	//	/*UWorld* World = this->GetWorld();
+	//	if (!ensure(World != nullptr)) return;
+	//	UServerRow* Row = CreateWidget<UServerRow>(World, ServerRowClass);
+	//	if (!ensure(Row != nullptr)) return;
+
+	//	Row->ServerName->SetText(FText::FromString(TEXT("Test String")));
+	//	ServerList->AddChild(Row);*/
+	//	MenuInterface->Join("");
+	//}
 }
 
 void UMainMenu::OpenJoinMenu()
@@ -84,6 +119,10 @@ void UMainMenu::OpenJoinMenu()
 	if (!ensure(JoinMenu != nullptr)) return;
 
 	MenuSwitcher->SetActiveWidget(JoinMenu);
+
+	if (MenuInterface != nullptr) {
+		MenuInterface->RefreshServerList();
+	}
 }
 
 void UMainMenu::OpenMainMenu()

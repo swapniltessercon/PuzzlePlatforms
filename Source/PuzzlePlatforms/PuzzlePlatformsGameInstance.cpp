@@ -7,11 +7,14 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Blueprint/UserWidget.h"
 #include "OnlineSessionSettings.h"
-#include "Interfaces/OnlineSessionInterface.h"
+//#include "Interfaces/OnlineSessionInterface.h"
 #include "PlatformTrigger.h"
 #include "MenuSystem/InGameMenu.h"
 #include "MenuSystem/MainMenu.h"
 #include "MenuSystem/MenuWidget.h"
+#include "MenuSystem/ServerRow.h"
+
+
 
 
 const static FName SESSION_NAME = TEXT("My Session Game");
@@ -54,15 +57,16 @@ void UPuzzlePlatformsGameInstance::Init()
 			FOnlineSessionSettings SessionSettings;
 			
 			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnCreateSessionComplete);
-			SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnCreateSessionComplete);
+			SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnDestroySessionComplete);
 			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnFindSessionsComplete);
+			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UPuzzlePlatformsGameInstance::OnJoinSessionComplete);
 
-			SessionSearch = MakeShareable(new FOnlineSessionSearch());
+			/*SessionSearch = MakeShareable(new FOnlineSessionSearch());
 			if (SessionSearch.IsValid())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Starting Find Session"));
 				SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
-			}
+			}*/
 		}
 	}
 	else
@@ -77,21 +81,23 @@ void UPuzzlePlatformsGameInstance::Init()
 
 void UPuzzlePlatformsGameInstance::OnFindSessionsComplete(bool Success)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("Finished Find Session"));
-	//SessionSearch = MakeShareable(new FOnlineSessionSearch());
-	//TSharedPtr<class FOnlineSessionSearch> SessionSearch;
+	
+	
+		TArray<FString> ServerNames;
 
 
-	//SessionSearch = MakeShareable(new FOnlineSessionSearch());
-
-	if (Success && SessionSearch.IsValid())
+	if (Success && SessionSearch.IsValid() && Menu != nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Finished Find Session"));
 
 		for (const FOnlineSessionSearchResult& SearchResult : SessionSearch->SearchResults)
 		{
+
+			UE_LOG(LogTemp, Warning, TEXT("Searching here.."));
 			UE_LOG(LogTemp, Warning, TEXT("Found session names: %s"), *SearchResult.GetSessionIdStr());
+			ServerNames.Add(SearchResult.GetSessionIdStr());
 		}
+		Menu->SetServerList(ServerNames);
 	}
 }
 
@@ -115,7 +121,7 @@ void UPuzzlePlatformsGameInstance::InGameLoadMenu()
 	if (!ensure(InGameMenuClass != nullptr)) return;
 
 	UInGameMenu* InGameMenu = CreateWidget<UInGameMenu>(this, InGameMenuClass);
-//	UMenuWidget* InGameMenu = CreateWidget<UMenuWidget>(this, InGameMenuClass);
+
 	if (!ensure(InGameMenu != nullptr)) return;
 
 	
@@ -130,13 +136,17 @@ void UPuzzlePlatformsGameInstance::Host()
 	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
 	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
 	auto ExistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
+	
+	
 
 	if (ExistingSession != nullptr)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Host Session NullPtr"));
 		SessionInterface->DestroySession(SESSION_NAME);
 	}
 	else
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Host Session Created"));
 		CreateSession();
 	}
 }
@@ -150,10 +160,11 @@ void UPuzzlePlatformsGameInstance::CreateSession()
 
 		
 		FOnlineSessionSettings SessionSettings;
-		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
 		SessionSettings.bIsLANMatch = true;
 		SessionSettings.NumPublicConnections = 2;
 		SessionSettings.bShouldAdvertise = true;
+		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
+		
 	}
 }
 
@@ -190,21 +201,70 @@ void UPuzzlePlatformsGameInstance::OnCreateSessionComplete(FName SessionName, bo
 
 }
 
-void UPuzzlePlatformsGameInstance::Join(const FString& Address)
+void UPuzzlePlatformsGameInstance::RefreshServerList()
 {
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	if (SessionSearch.IsValid())
+	{
+		SessionSearch->bIsLanQuery = true;
+		UE_LOG(LogTemp, Warning, TEXT("Starting Find Session"));
+		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+	}
+}
+
+void UPuzzlePlatformsGameInstance::Join(uint32 Index)
+{
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+
+	if (!SessionInterface.IsValid()) return;
+	if (!SessionSearch.IsValid()) return;
+
 	if (Menu != nullptr)
 	{
+		Menu->SetServerList({ "Test1", "Test2" });
 		Menu->Teardown();
+	}
+
+	/*UEngine* Engine = GetEngine();
+	if (!ensure(Engine != nullptr)) return;
+
+	Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining %s"), *Address));
+	APlayerController* PlayerController = GetFirstLocalPlayerController();
+	if (!ensure(PlayerController != nullptr)) return;
+	PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);*/
+	SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[Index]);
+}
+
+void UPuzzlePlatformsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
+	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+
+	if (!SessionInterface.IsValid()) return;
+
+	FString Address;
+	if (!SessionInterface->GetResolvedConnectString(SessionName, Address)) {
+		UE_LOG(LogTemp, Warning, TEXT("Could not get connect string."));
+		return;
 	}
 
 	UEngine* Engine = GetEngine();
 	if (!ensure(Engine != nullptr)) return;
 
 	Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining %s"), *Address));
+
 	APlayerController* PlayerController = GetFirstLocalPlayerController();
 	if (!ensure(PlayerController != nullptr)) return;
+
+
 	PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
+
+
 
 void UPuzzlePlatformsGameInstance::LoadMainMenu()
 {
