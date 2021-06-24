@@ -46,12 +46,12 @@ UPuzzlePlatformsGameInstance::UPuzzlePlatformsGameInstance(const FObjectInitiali
 void UPuzzlePlatformsGameInstance::Init()
 {
 
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	//TSharedPtr<class FOnlineSessionSearch> SessionSearch;
+     Subsystem = IOnlineSubsystem::Get();
+	
 	if (Subsystem != nullptr) {
 
 		UE_LOG(LogTemp, Warning, TEXT("Found Subsystem %s"), *Subsystem->GetSubsystemName().ToString());
-		IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+		SessionInterface = Subsystem->GetSessionInterface();
 
 		if (SessionInterface.IsValid()) {
 			FOnlineSessionSettings SessionSettings;
@@ -82,10 +82,6 @@ void UPuzzlePlatformsGameInstance::Init()
 void UPuzzlePlatformsGameInstance::OnFindSessionsComplete(bool Success)
 {
 	
-	
-		//TArray<FString> ServerNames;
-
-
 	if (Success && SessionSearch.IsValid() && Menu != nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Finished Find Session"));
@@ -102,8 +98,15 @@ void UPuzzlePlatformsGameInstance::OnFindSessionsComplete(bool Success)
 			Data.Name = SearchResult.GetSessionIdStr();
 			//Data.CurrentPlayers = SearchResult.Session.NumOpenPublicConnections;
 			Data.MaxPlayers = SearchResult.Session.SessionSettings.NumPublicConnections;
+			UE_LOG(LogTemp, Warning, TEXT("Found Publicoonection: %d"), SearchResult.Session.SessionSettings.NumPublicConnections)
+			UE_LOG(LogTemp, Warning, TEXT("Found openPublicoonection: %d"), SearchResult.Session.NumOpenPublicConnections)
+
 			Data.CurrentPlayers = Data.MaxPlayers - SearchResult.Session.NumOpenPublicConnections;
+
+			UE_LOG(LogTemp, Warning, TEXT("Found Current Player: %d"), Data.CurrentPlayers)
 			Data.HostUsername = SearchResult.Session.OwningUserName;
+
+			
 			ServerNames.Add(Data);
 		}
 		Menu->SetServerList(ServerNames);
@@ -142,8 +145,7 @@ void UPuzzlePlatformsGameInstance::InGameLoadMenu()
 
 void UPuzzlePlatformsGameInstance::Host()
 {
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+	
 	auto ExistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
 	
 	
@@ -162,8 +164,8 @@ void UPuzzlePlatformsGameInstance::Host()
 
 void UPuzzlePlatformsGameInstance::CreateSession()
 {
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+	
+     SessionInterface = Subsystem->GetSessionInterface();
 
 	if (SessionInterface.IsValid()) {
 
@@ -207,6 +209,7 @@ void UPuzzlePlatformsGameInstance::OnCreateSessionComplete(FName SessionName, bo
 	{
 		Menu->Teardown();
 	}
+
 	UEngine* Engine = GetEngine();
 	if (!ensure(Engine != nullptr)) return;
 
@@ -223,9 +226,7 @@ void UPuzzlePlatformsGameInstance::OnCreateSessionComplete(FName SessionName, bo
 
 void UPuzzlePlatformsGameInstance::RefreshServerList()
 {
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
-
+	
 	SessionSearch = MakeShareable(new FOnlineSessionSearch());
 	if (SessionSearch.IsValid())
 	{
@@ -240,8 +241,7 @@ void UPuzzlePlatformsGameInstance::RefreshServerList()
 
 void UPuzzlePlatformsGameInstance::Join(uint32 Index)
 {
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+	
 
 	if (!SessionInterface.IsValid()) return;
 	if (!SessionSearch.IsValid()) return;
@@ -264,8 +264,7 @@ void UPuzzlePlatformsGameInstance::Join(uint32 Index)
 
 void UPuzzlePlatformsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result)
 {
-	IOnlineSubsystem* Subsystem = IOnlineSubsystem::Get();
-	IOnlineSessionPtr SessionInterface = Subsystem->GetSessionInterface();
+	
 
 	if (!SessionInterface.IsValid()) return;
 
@@ -287,7 +286,13 @@ void UPuzzlePlatformsGameInstance::OnJoinSessionComplete(FName SessionName, EOnJ
 	PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
-
+void UPuzzlePlatformsGameInstance::StartSession()
+{
+	if (SessionInterface.IsValid())
+	{
+		SessionInterface->StartSession(SESSION_NAME);
+	}
+}
 
 void UPuzzlePlatformsGameInstance::LoadMainMenu()
 {

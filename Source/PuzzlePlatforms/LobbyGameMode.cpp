@@ -2,7 +2,7 @@
 
 
 #include "LobbyGameMode.h"
-
+#include "PuzzlePlatformsGameInstance.h"
 
 ALobbyGameMode::ALobbyGameMode()
 {
@@ -10,7 +10,7 @@ ALobbyGameMode::ALobbyGameMode()
 }
 
 void ALobbyGameMode::PostLogin(APlayerController* NewPlayer) {
-	
+		
 	Super::PostLogin(NewPlayer);
 	UE_LOG(LogTemp, Warning, TEXT("In PostLogin"))
 	++NumberOfPlayers;
@@ -38,8 +38,14 @@ void ALobbyGameMode::Logout(AController* Exiting) {
 
 void ALobbyGameMode::LobbyDelay()
 {
-	UWorld* World = GetWorld();
 
+	auto GameInstance = Cast<UPuzzlePlatformsGameInstance>(GetGameInstance());
+
+	if (GameInstance == nullptr) return;
+
+	GameInstance->StartSession();
+
+	UWorld* World = GetWorld();
 	if (ensure(World != nullptr))
 	{
 		bUseSeamlessTravel = true;

@@ -33,6 +33,9 @@ public:
 	UFUNCTION(Exec)
 		void Join(uint32 Index) override;
 
+	void StartSession();
+
+
 	virtual void LoadMainMenu() override;
 	void RefreshServerList() override;
 
@@ -46,7 +49,8 @@ private:
 
    //TSharedPtr<class FOnlineSessionSearch> SessionSearch;
    
-   //IOnlineSessionPtr SessionInterface;
+   IOnlineSessionPtr SessionInterface;
+   IOnlineSubsystem* Subsystem;
    void OnCreateSessionComplete(FName SessionName, bool Success);
 
    void OnDestroySessionComplete(FName SessionName, bool Success);

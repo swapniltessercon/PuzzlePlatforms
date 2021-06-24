@@ -69,8 +69,12 @@ void UMainMenu::SetServerList(TArray<FServerData> ServerNames)
 
 		Row->ServerName->SetText(FText::FromString(ServerData.Name));
 		Row->HostUser->SetText(FText::FromString(ServerData.HostUsername));
+
 		FString FractionText = FString::Printf(TEXT("%d/%d"), ServerData.CurrentPlayers, ServerData.MaxPlayers);
+
+		UE_LOG(LogTemp, Warning, TEXT("Selected index %s......."), *FractionText);
 		Row->ConnectionFraction->SetText(FText::FromString(FractionText));
+
 		Row->Setup(this, i);
 		++i;
 
